@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>University Scheduling System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone@7/babel.min.js"></script>
+    <style>
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: #0f172a;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script>
+      async function loadApp() {
+        // Create lucide icon stubs
+        const lucide = {
+          Menu: (props) => React.createElement('div', { ...props }, '☰'),
+          X: (props) => React.createElement('div', { ...props }, '✕'),
+          LogOut: (props) => React.createElement('div', { ...props }, '⤴'),
+          Plus: (props) => React.createElement('div', { ...props }, '➕'),
+          Calendar: (props) => React.createElement('div', { ...props }, '📅'),
+          Users: (props) => React.createElement('div', { ...props }, '👥'),
+          Room: (props) => React.createElement('div', { ...props }, '🏛️'),
+          AlertCircle: (props) => React.createElement('div', { ...props }, '⚠️'),
+          CheckCircle: (props) => React.createElement('div', { ...props }, '✓'),
+          Clock: (props) => React.createElement('div', { ...props }, '🕐'),
+          BookOpen: (props) => React.createElement('div', { ...props }, '📖'),
+          Building2: (props) => React.createElement('div', { ...props }, '🏢'),
+          Hash: (props) => React.createElement('div', { ...props }, '#'),
+          Eye: (props) => React.createElement('div', { ...props }, '👁'),
+          ChevronDown: (props) => React.createElement('div', { ...props }, '▼'),
+          ChevronUp: (props) => React.createElement('div', { ...props }, '▲'),
+          Search: (props) => React.createElement('div', { ...props }, '🔍'),
+          Edit2: (props) => React.createElement('div', { ...props }, '✎'),
+          Trash2: (props) => React.createElement('div', { ...props }, '🗑'),
+          AlertTriangle: (props) => React.createElement('div', { ...props }, '⚠'),
+          Sun: (props) => React.createElement('div', { ...props }, '☀'),
+          Moon: (props) => React.createElement('div', { ...props }, '☾'),
+        };
+
+        const response = await fetch('./university-scheduling-system.jsx');
+        let source = await response.text();
+        
+        // Remove all import statements
+        source = source.replace(/import\s+React,\s*{[^}]+}\s+from\s+['"]react['"];?/g, '');
+        source = source.replace(/import\s+{[^}]+}\s+from\s+['"]lucide-react['"];?/g, '');
+        
+        // Remove export default
+        source = source.replace(/export\s+default\s+\w+;?/g, 'window.UniversitySchedulingSystem = UniversitySchedulingSystem;');
+
+        const fullCode = `
+          const React = window.React;
+          const ReactDOM = window.ReactDOM;
+          const { useState, useEffect } = React;
+          const { Menu, X, LogOut, Plus, Calendar, Users, Room, AlertCircle, CheckCircle, Clock, BookOpen, Building2, Hash, Eye, ChevronDown, ChevronUp, Search, Edit2, Trash2, AlertTriangle, Sun, Moon } = window.lucide;
+          ${source}
+        `;
+
+        window.lucide = lucide;
+        const transformed = Babel.transform(fullCode, { presets: ['react'] }).code;
+        eval(transformed);
+
+        ReactDOM.createRoot(document.getElementById('root')).render(
+          React.createElement(React.StrictMode, null, React.createElement(UniversitySchedulingSystem))
+        );
+      }
+
+      loadApp().catch((error) => {
+        document.body.innerHTML = '<pre style="color: #f87171; padding: 24px; font-family: monospace;">' +
+          'Error loading app:\n' +
+          error.toString() +
+          '</pre>';
+        console.error(error);
+      });
+    </script>
+  </body>
+</html>
