@@ -86,12 +86,13 @@ Production-ready Next.js 14 App Router backend and frontend for a University Mak
    - `DATABASE_URL`: a PostgreSQL production database connection string, for example from Vercel Postgres, Neon, or Supabase.
    - `NEXTAUTH_SECRET`: generated with `openssl rand -base64 32`.
    - `NEXTAUTH_URL`: your Vercel deployment URL, for example `https://your-app.vercel.app`.
+   - Remove any old `DATABASE_URL` value like `file:./dev.db`; SQLite only works locally.
 4. Deploy.
 
 Vercel runs the configured build command:
 
 ```bash
-prisma migrate deploy && prisma generate && next build
+npm run vercel-build
 ```
 
 The `postinstall` script also runs `prisma generate` after dependency installation.
