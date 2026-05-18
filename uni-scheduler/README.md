@@ -6,7 +6,7 @@ Production-ready Next.js 14 App Router backend and frontend for a University Mak
 
 - Next.js 14 App Router
 - TypeScript
-- PostgreSQL via Neon
+- SQLite via Prisma
 - Prisma ORM
 - NextAuth.js v5 credentials auth
 - bcryptjs password hashing
@@ -26,11 +26,7 @@ Production-ready Next.js 14 App Router backend and frontend for a University Mak
    npm install
    ```
 
-3. Create a free Neon PostgreSQL database at https://neon.tech.
-
-   Copy the PostgreSQL connection string from the Neon dashboard. Use the pooled connection string for Vercel/serverless deployment.
-
-4. Copy `.env.example` to `.env.local` and fill in the values.
+3. Copy `.env.example` to `.env.local` and fill in the values.
 
    ```bash
    cp .env.example .env.local
@@ -39,7 +35,7 @@ Production-ready Next.js 14 App Router backend and frontend for a University Mak
    Required values:
 
    ```bash
-   DATABASE_URL="postgresql://user:password@host/dbname?sslmode=require"
+   DATABASE_URL="file:./dev.db"
    NEXTAUTH_SECRET="your-generated-secret"
    NEXTAUTH_URL="http://localhost:3000"
    ```
@@ -50,13 +46,13 @@ Production-ready Next.js 14 App Router backend and frontend for a University Mak
    openssl rand -base64 32
    ```
 
-5. Push the Prisma schema to Neon.
+4. Push the Prisma schema to the local SQLite database.
 
    ```bash
-   npx prisma db push
+   npm run db:push
    ```
 
-6. Seed demo data.
+5. Seed demo data.
 
    ```bash
    npm run db:seed
@@ -74,7 +70,7 @@ Production-ready Next.js 14 App Router backend and frontend for a University Mak
    pass123
    ```
 
-7. Start the local server.
+6. Start the local server.
 
    ```bash
    npm run dev
@@ -87,7 +83,7 @@ Production-ready Next.js 14 App Router backend and frontend for a University Mak
 1. Push the project to GitHub.
 2. Import the project in the Vercel dashboard.
 3. Add these environment variables in Vercel:
-   - `DATABASE_URL`: Neon pooled PostgreSQL connection string.
+   - `DATABASE_URL`: a production database connection string.
    - `NEXTAUTH_SECRET`: generated with `openssl rand -base64 32`.
    - `NEXTAUTH_URL`: your Vercel deployment URL, for example `https://your-app.vercel.app`.
 4. Deploy.
