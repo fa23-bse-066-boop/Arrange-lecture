@@ -6,7 +6,7 @@ Production-ready Next.js 14 App Router backend and frontend for a University Mak
 
 - Next.js 14 App Router
 - TypeScript
-- SQLite via Prisma
+- PostgreSQL via Prisma
 - Prisma ORM
 - NextAuth.js v5 credentials auth
 - bcryptjs password hashing
@@ -35,7 +35,7 @@ Production-ready Next.js 14 App Router backend and frontend for a University Mak
    Required values:
 
    ```bash
-   DATABASE_URL="file:./dev.db"
+   DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/DATABASE?sslmode=require"
    NEXTAUTH_SECRET="your-generated-secret"
    NEXTAUTH_URL="http://localhost:3000"
    ```
@@ -46,10 +46,10 @@ Production-ready Next.js 14 App Router backend and frontend for a University Mak
    openssl rand -base64 32
    ```
 
-4. Push the Prisma schema to the local SQLite database.
+4. Apply Prisma migrations to your database.
 
    ```bash
-   npm run db:push
+   npx prisma migrate deploy
    ```
 
 5. Seed demo data.
@@ -83,7 +83,7 @@ Production-ready Next.js 14 App Router backend and frontend for a University Mak
 1. Push the project to GitHub.
 2. Import the project in the Vercel dashboard.
 3. Add these environment variables in Vercel:
-   - `DATABASE_URL`: a production database connection string.
+   - `DATABASE_URL`: a PostgreSQL production database connection string, for example from Vercel Postgres, Neon, or Supabase.
    - `NEXTAUTH_SECRET`: generated with `openssl rand -base64 32`.
    - `NEXTAUTH_URL`: your Vercel deployment URL, for example `https://your-app.vercel.app`.
 4. Deploy.
@@ -91,7 +91,7 @@ Production-ready Next.js 14 App Router backend and frontend for a University Mak
 Vercel runs the configured build command:
 
 ```bash
-prisma generate && next build
+prisma migrate deploy && prisma generate && next build
 ```
 
 The `postinstall` script also runs `prisma generate` after dependency installation.
@@ -102,7 +102,7 @@ The `postinstall` script also runs `prisma generate` after dependency installati
 npm run dev       # start local development server
 npm run build     # generate Prisma client and build Next.js
 npm run start     # start production server
-npm run db:push   # create/update database tables
+npx prisma migrate deploy # create/update database tables from migrations
 npm run db:seed   # insert demo teachers and sample lecture
 npm run db:studio # open Prisma Studio
 ```

@@ -2,16 +2,16 @@
   "name": "makeup-lecture-system-workspace",
   "version": "1.0.0",
   "private": true,
+  "workspaces": [
+    "uni-scheduler"
+  ],
   "scripts": {
-    "dev": "npm --prefix uni-scheduler run dev",
-    "build": "npm --prefix uni-scheduler run build",
-    "start": "npm --prefix uni-scheduler run start",
-    "db:push": "npm --prefix uni-scheduler run db:push",
-    "db:seed": "npm --prefix uni-scheduler run db:seed",
-    "db:studio": "npm --prefix uni-scheduler run db:studio"
-  },
-  "dependencies": {
-  "@prisma/client": "^5.22.0",
-  "prisma": "^5.22.0"
-}
+    "dev": "npm --workspace uni-scheduler run dev",
+    "build": "npm --workspace uni-scheduler run build",
+    "vercel-build": "npm --workspace uni-scheduler run vercel-build",
+    "start": "npm --workspace uni-scheduler run start",
+    "db:push": "npm --workspace uni-scheduler run db:push",
+    "db:seed": "npm --workspace uni-scheduler run db:seed",
+    "db:studio": "npm --workspace uni-scheduler run db:studio"
+  }
 }
