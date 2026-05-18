@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState, memo, type FormEvent, type ReactNode } from "react";
 import { signIn, signOut, useSession } from "next-auth/react";
 import {
   AlertCircle,
@@ -44,12 +44,6 @@ const ROOM_BLOCKS = ["CS", "SE", "AI", "MS"] as const;
 const ROOM_NUMBERS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] as const;
 const LECTURE_SLOTS = ["Slot 1", "Slot 2", "Slot 3", "Slot 4", "Slot 5"] as const;
 const LAB_SLOTS = ["Slot 1 + Slot 2", "Slot 2 + Slot 3", "Slot 4 + Slot 5"] as const;
-
-const DEMO_TEACHERS = [
-  { name: "Dr. Ahmed Khan", email: "ahmed@university.edu" },
-  { name: "Dr. Fatima Malik", email: "fatima@university.edu" },
-  { name: "Prof. Ali Raza", email: "ali@university.edu" },
-];
 
 const slotTime = (slot: string) => {
   const map: Record<string, string> = {
@@ -349,7 +343,7 @@ function LoginPage({ onSignedIn }: { onSignedIn: () => void }) {
   const [login, setLogin] = useState({ email: "", password: "" });
   const [signup, setSignup] = useState({ name: "", email: "", password: "", department: "CS" });
 
-  const handleLogin = async (event: FormEvent) => {
+  const handleLogin = useCallback(async (event: FormEvent) => {
     event.preventDefault();
     setIsLoading(true);
     setMessage({ type: "", text: "" });
@@ -368,9 +362,9 @@ function LoginPage({ onSignedIn }: { onSignedIn: () => void }) {
     }
 
     onSignedIn();
-  };
+  }, [login, onSignedIn]);
 
-  const handleSignup = async (event: FormEvent) => {
+  const handleSignup = useCallback(async (event: FormEvent) => {
     event.preventDefault();
     setIsLoading(true);
     setMessage({ type: "", text: "" });
@@ -401,7 +395,7 @@ function LoginPage({ onSignedIn }: { onSignedIn: () => void }) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [signup, onSignedIn]);
 
   return (
     <main className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-md items-center px-4 py-12">
@@ -419,7 +413,7 @@ function LoginPage({ onSignedIn }: { onSignedIn: () => void }) {
         <form onSubmit={isSignup ? handleSignup : handleLogin} className="mt-6 space-y-3">
           {isSignup && (
             <>
-              <Input placeholder="Full name" value={signup.name} onChange={(value) => setSignup((current) => ({ ...current, name: value }))} />
+              <Input placeholder="Full name" autoComplete="name" value={signup.name} onChange={(value) => setSignup((current) => ({ ...current, name: value }))} />
               <Select value={signup.department} onChange={(value) => setSignup((current) => ({ ...current, department: value }))}>
                 {TEACHER_DEPARTMENTS.map((department) => (
                   <option key={department} value={department}>{department}</option>
@@ -431,12 +425,14 @@ function LoginPage({ onSignedIn }: { onSignedIn: () => void }) {
           <Input
             type="email"
             placeholder="Email address"
+            autoComplete="email"
             value={isSignup ? signup.email : login.email}
             onChange={(value) => isSignup ? setSignup((current) => ({ ...current, email: value })) : setLogin((current) => ({ ...current, email: value }))}
           />
           <Input
             type="password"
             placeholder="Password"
+            autoComplete={isSignup ? "new-password" : "current-password"}
             value={isSignup ? signup.password : login.password}
             onChange={(value) => isSignup ? setSignup((current) => ({ ...current, password: value })) : setLogin((current) => ({ ...current, password: value }))}
           />
@@ -456,23 +452,6 @@ function LoginPage({ onSignedIn }: { onSignedIn: () => void }) {
         >
           {isSignup ? "Already have an account? Sign in" : "Need teacher access? Create an account"}
         </button>
-
-        {!isSignup && (
-          <div className="mt-6 rounded-lg border border-white/10 bg-slate-950/60 p-4 text-xs text-slate-400">
-            <p className="mb-2 font-semibold text-slate-200">Demo credentials after seeding</p>
-            {DEMO_TEACHERS.map((teacher) => (
-              <button
-                key={teacher.email}
-                type="button"
-                onClick={() => setLogin({ email: teacher.email, password: "pass123" })}
-                className="block w-full rounded py-1 text-left hover:text-white"
-              >
-                {teacher.name} - {teacher.email}
-              </button>
-            ))}
-            <p className="mt-2 text-slate-500">Password: pass123</p>
-          </div>
-        )}
       </div>
     </main>
   );
@@ -893,16 +872,18 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
-function Input({
+const Input = memo(function Input({
   value,
   onChange,
   placeholder,
   type = "text",
+  autoComplete = "off",
 }: {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
   type?: string;
+  autoComplete?: string;
 }) {
   return (
     <input
@@ -910,10 +891,11 @@ function Input({
       value={value}
       placeholder={placeholder}
       onChange={(event) => onChange(event.target.value)}
+      autoComplete={autoComplete}
       className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2.5 text-sm text-white outline-none transition placeholder:text-slate-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/40"
     />
   );
-}
+});
 
 function PreviewRow({ label, value }: { label: string; value: string }) {
   return (
