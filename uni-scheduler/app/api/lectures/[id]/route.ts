@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { createClient } from "@supabase/supabase-js";
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!
+);
 
 export const runtime = "nodejs";
 
@@ -21,12 +26,13 @@ export async function DELETE(
     return NextResponse.json({ error: "Invalid lecture id." }, { status: 400 });
   }
 
-  const lecture = await prisma.lecture.findUnique({
-    where: { id },
-    select: { id: true, teacherId: true },
-  });
+  const { data: lecture, error } = await supabase
+    .from("Lecture")
+    .select("id, teacherId")
+    .eq("id", id)
+    .single();
 
-  if (!lecture) {
+  if (error || !lecture) {
     return NextResponse.json({ error: "Lecture not found." }, { status: 404 });
   }
 
@@ -34,9 +40,10 @@ export async function DELETE(
     return NextResponse.json({ error: "You can only delete your own lectures." }, { status: 403 });
   }
 
-  await prisma.lecture.delete({
-    where: { id },
-  });
+  await supabase
+    .from("Lecture")
+    .delete()
+    .eq("id", id);
 
   return NextResponse.json({ success: true });
 }

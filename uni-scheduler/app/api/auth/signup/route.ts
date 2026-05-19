@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import { prisma } from "@/lib/prisma";
 import { TEACHER_DEPARTMENTS } from "@/lib/conflicts";
+import { createClient } from "@supabase/supabase-js";
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!
+);
 
 export const runtime = "nodejs";
 
@@ -38,30 +43,32 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Department must be CS, SE, AI, or MS." }, { status: 400 });
   }
 
-  const existingTeacher = await prisma.teacher.findUnique({
-    where: { email },
-    select: { id: true },
-  });
+  const { data: existingTeacher } = await supabase
+    .from("Teacher")
+    .select("id")
+    .eq("email", email)
+    .single();
 
   if (existingTeacher) {
     return NextResponse.json({ error: "A teacher with this email already exists." }, { status: 409 });
   }
 
   const hashedPassword = await bcrypt.hash(password, 12);
-  const teacher = await prisma.teacher.create({
-    data: {
+  
+  const { data: teacher, error } = await supabase
+    .from("Teacher")
+    .insert([{
       name,
       email,
       password: hashedPassword,
       department,
-    },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      department: true,
-    },
-  });
+    }])
+    .select("id, name, email, department")
+    .single();
+    
+  if (error || !teacher) {
+    return NextResponse.json({ error: "Failed to create teacher." }, { status: 500 });
+  }
 
   return NextResponse.json(teacher, { status: 201 });
 }

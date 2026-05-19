@@ -1,7 +1,12 @@
 import NextAuth, { type NextAuthConfig } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
-import { prisma } from "@/lib/prisma";
+import { createClient } from "@supabase/supabase-js";
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!
+);
 
 export const authConfig = {
   secret: process.env.NEXTAUTH_SECRET,
@@ -22,11 +27,13 @@ export const authConfig = {
 
         if (!email || !password) return null;
 
-        const teacher = await prisma.teacher.findUnique({
-          where: { email },
-        });
+        const { data: teacher, error } = await supabase
+          .from("Teacher")
+          .select("*")
+          .eq("email", email)
+          .single();
 
-        if (!teacher) return null;
+        if (error || !teacher) return null;
 
         const isValid = await bcrypt.compare(password, teacher.password);
         if (!isValid) return null;

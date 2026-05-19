@@ -1,5 +1,25 @@
-import type { Lecture } from "@prisma/client";
-import { prisma } from "@/lib/prisma";
+import { createClient } from "@supabase/supabase-js";
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!
+);
+
+export type Lecture = {
+  id?: number;
+  subject?: string;
+  type?: string;
+  department: string;
+  semester: number;
+  section: string;
+  day?: string;
+  date: string;
+  slot: string;
+  room: string;
+  status?: string;
+  createdAt?: string;
+  teacherId: number;
+};
 
 export const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"] as const;
 export const TEACHER_DEPARTMENTS = ["CS", "SE", "AI", "MS"] as const;
@@ -120,22 +140,14 @@ export const detectConflictsFromLectures = (
 };
 
 export const checkLectureConflicts = async (candidate: NewLectureForConflict) => {
-  const sameDateSlotLectures = await prisma.lecture.findMany({
-    where: {
-      date: candidate.date,
-      slot: candidate.slot,
-      status: "scheduled",
-    },
-    select: {
-      room: true,
-      teacherId: true,
-      department: true,
-      semester: true,
-      section: true,
-    },
-  });
+  const { data: sameDateSlotLectures } = await supabase
+    .from("Lecture")
+    .select("room, teacherId, department, semester, section")
+    .eq("date", candidate.date)
+    .eq("slot", candidate.slot)
+    .eq("status", "scheduled");
 
-  return detectConflictsFromLectures(candidate, sameDateSlotLectures);
+  return detectConflictsFromLectures(candidate, sameDateSlotLectures || []);
 };
 
 const addDays = (date: Date, days: number) => {
@@ -156,23 +168,14 @@ export const findAlternatives = async (candidate: NewLectureForConflict): Promis
     if (getDayFromDate(dateString)) dates.push(dateString);
   }
 
-  const lectures = await prisma.lecture.findMany({
-    where: {
-      date: { in: dates },
-      slot: { in: validSlots },
-      status: "scheduled",
-    },
-    select: {
-      date: true,
-      slot: true,
-      room: true,
-      teacherId: true,
-      department: true,
-      semester: true,
-      section: true,
-    },
-  });
+  const { data: lectures } = await supabase
+    .from("Lecture")
+    .select("date, slot, room, teacherId, department, semester, section")
+    .in("date", dates)
+    .in("slot", validSlots)
+    .eq("status", "scheduled");
 
+  const safeLectures = lectures || [];
   const alternatives: AlternativeSlot[] = [];
 
   for (const date of dates) {
@@ -180,7 +183,7 @@ export const findAlternatives = async (candidate: NewLectureForConflict): Promis
     if (!day) continue;
 
     for (const slot of validSlots) {
-      const sameDateSlotLectures = lectures.filter((lecture) => lecture.date === date && lecture.slot === slot);
+      const sameDateSlotLectures = safeLectures.filter((lecture) => lecture.date === date && lecture.slot === slot);
       const { hasConflict } = detectConflictsFromLectures(
         { ...candidate, date, slot },
         sameDateSlotLectures,

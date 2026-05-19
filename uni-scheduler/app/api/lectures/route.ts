@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { createClient } from "@supabase/supabase-js";
 import {
   checkLectureConflicts,
   CLASS_DEPARTMENTS,
@@ -17,27 +17,17 @@ import {
   type LectureType,
 } from "@/lib/conflicts";
 
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!
+);
+
 export const runtime = "nodejs";
 
-const lectureSelect = {
-  id: true,
-  subject: true,
-  type: true,
-  department: true,
-  semester: true,
-  section: true,
-  day: true,
-  date: true,
-  slot: true,
-  room: true,
-  status: true,
-  teacherId: true,
-  teacher: {
-    select: {
-      name: true,
-    },
-  },
-};
+const lectureSelectQuery = `
+  id, subject, type, department, semester, section, day, date, slot, room, status, teacherId,
+  teacher:Teacher(name)
+`;
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -46,15 +36,20 @@ export async function GET(request: Request) {
   const section = url.searchParams.get("section");
   const semester = semesterParam ? Number(semesterParam) : undefined;
 
-  const lectures = await prisma.lecture.findMany({
-    where: {
-      ...(department ? { department } : {}),
-      ...(semester ? { semester } : {}),
-      ...(section ? { section } : {}),
-    },
-    select: lectureSelect,
-    orderBy: [{ date: "asc" }, { slot: "asc" }, { createdAt: "asc" }],
-  });
+  let query = supabase.from("Lecture").select(lectureSelectQuery);
+
+  if (department) query = query.eq("department", department);
+  if (semester) query = query.eq("semester", semester);
+  if (section) query = query.eq("section", section);
+
+  const { data: lectures, error } = await query
+    .order("date", { ascending: true })
+    .order("slot", { ascending: true })
+    .order("createdAt", { ascending: true });
+
+  if (error) {
+    return NextResponse.json({ error: "Failed to fetch lectures." }, { status: 500 });
+  }
 
   return NextResponse.json(lectures);
 }
@@ -173,8 +168,9 @@ export async function POST(request: Request) {
     );
   }
 
-  const lecture = await prisma.lecture.create({
-    data: {
+  const { data: lecture, error } = await supabase
+    .from("Lecture")
+    .insert([{
       subject,
       type,
       department,
@@ -185,9 +181,21 @@ export async function POST(request: Request) {
       slot,
       room,
       teacherId,
-    },
-    select: lectureSelect,
-  });
+    }])
+    .select(lectureSelectQuery)
+    .single();
 
-  return NextResponse.json(lecture, { status: 201 });
+  if (error || !lecture) {
+    return NextResponse.json({ error: "Failed to schedule lecture." }, { status: 500 });
+  }
+
+  // Supabase returns related table objects as arrays if it's a one-to-many, 
+  // but teacher is many-to-one, so teacher should be an object. 
+  // If it comes back as an array, we unwrap it.
+  const formattedLecture = {
+    ...lecture,
+    teacher: Array.isArray(lecture.teacher) ? lecture.teacher[0] : lecture.teacher
+  };
+
+  return NextResponse.json(formattedLecture, { status: 201 });
 }
